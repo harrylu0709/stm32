@@ -1,0 +1,10 @@
+20:22:29 **** Incremental Build of configuration Debug for project stm32f4xx_driver ****
+make -j4 all 
+arm-none-eabi-size   stm32f4xx_driver.elf 
+   text	   data	    bss	    dec	    hex	filename
+   9352	    120	   1760	  11232	   2be0	stm32f4xx_driver.elf
+Finished building: default.size.stdout
+ 
+
+20:22:29 Build Finished. 0 errors, 0 warnings. (took 392ms)
+
