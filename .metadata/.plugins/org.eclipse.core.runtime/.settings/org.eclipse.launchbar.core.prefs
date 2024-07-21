@@ -7,5 +7,5 @@ org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:002SampleApp/activeLaunchMode=d
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:002SampleApp/activeLaunchTarget=null\:---
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:helloword/activeLaunchMode=debug
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:helloword/activeLaunchTarget=null\:---
-org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:stm32f4xx_driver\ Debug/activeLaunchMode=debug
+org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:stm32f4xx_driver\ Debug/activeLaunchMode=run
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:stm32f4xx_driver\ Debug/activeLaunchTarget=null\:---
