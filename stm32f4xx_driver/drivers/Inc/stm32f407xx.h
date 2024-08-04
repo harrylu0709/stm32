@@ -71,7 +71,7 @@
  * Base addresses of peripherals which are hanging on AHB1 bus
  * TODO : Complete for all other peripherals
  */
-
+//RF 2.3 memory map
 #define GPIOA_BASEADDR                   (AHB1PERIPH_BASEADDR + 0x0000)
 #define GPIOB_BASEADDR                   (AHB1PERIPH_BASEADDR + 0x0400)
 #define GPIOC_BASEADDR 					 (AHB1PERIPH_BASEADDR + 0x0800)
@@ -232,16 +232,16 @@ typedef struct
  */
 typedef struct
 {
-  __vo uint32_t CR1;        /*!< TODO,     										Address offset: 0x00 */
-  __vo uint32_t CR2;        /*!< TODO,     										Address offset: 0x04 */
-  __vo uint32_t OAR1;       /*!< TODO,     										Address offset: 0x08 */
-  __vo uint32_t OAR2;       /*!< TODO,     										Address offset: 0x0C */
-  __vo uint32_t DR;         /*!< TODO,     										Address offset: 0x10 */
-  __vo uint32_t SR1;        /*!< TODO,     										Address offset: 0x14 */
-  __vo uint32_t SR2;        /*!< TODO,     										Address offset: 0x18 */
-  __vo uint32_t CCR;        /*!< TODO,     										Address offset: 0x1C */
-  __vo uint32_t TRISE;      /*!< TODO,     										Address offset: 0x20 */
-  __vo uint32_t FLTR;       /*!< TODO,     										Address offset: 0x24 */
+	__vo uint32_t CR1;
+	__vo uint32_t CR2;
+	__vo uint32_t OAR1;
+	__vo uint32_t OAR2;
+	__vo uint32_t DR;
+	__vo uint32_t SR1;
+	__vo uint32_t SR2;
+	__vo uint32_t CCR;
+	__vo uint32_t TRISE;
+	__vo uint32_t FLTR;
 }I2C_RegDef_t;
 
 /*
@@ -294,6 +294,7 @@ typedef struct
 
 /*
  * Clock Enable Macros for GPIOx peripherals
+ * RCC registers 6.3
  */
 
 #define GPIOA_PCLK_EN()    	(RCC->AHB1ENR |= (1 << 0))
@@ -353,6 +354,10 @@ typedef struct
 #define GPIOH_PCLK_DI()		(RCC->AHB1ENR &= ~(1 << 7))
 #define GPIOI_PCLK_DI()		(RCC->AHB1ENR &= ~(1 << 8))
 
+
+#define I2C1_PCLK_DI() (RCC->APB1ENR &= ~(1 << 21))
+#define I2C2_PCLK_DI() (RCC->APB1ENR &= ~(1 << 22))
+#define I2C3_PCLK_DI() (RCC->APB1ENR &= ~(1 << 23))
 /*
  * Clock Disable Macros for SPIx peripherals
  */
@@ -418,8 +423,8 @@ typedef struct
 #define IRQ_NO_SPI3			51
 #define IRQ_NO_SPI4			84
 
-//#define IRQ_NO_I2C1_EV     31
-//#define IRQ_NO_I2C1_ER     32
+#define IRQ_NO_I2C1_EV     31
+#define IRQ_NO_I2C1_ER     32
 //#define IRQ_NO_USART1	    37
 //#define IRQ_NO_USART2	    38
 //#define IRQ_NO_USART3	    39
@@ -530,6 +535,7 @@ typedef struct
 
 /*
  * Bit position definitions I2C_OAR1
+ * own address register
  */
 #define I2C_OAR1_ADD0    				 0
 #define I2C_OAR1_ADD71 				 	 1
@@ -564,6 +570,7 @@ typedef struct
 
 /*
  * Bit position definitions I2C_CCR
+ * clock control register
  */
 #define I2C_CCR_CCR 					 0
 #define I2C_CCR_DUTY 					14
@@ -640,7 +647,7 @@ typedef struct
 
 #include "stm32f407xx_gpio_driver.h"
 #include "stm32f407xx_spi_driver.h"
-
+#include "stm32f407xx_i2c_driver.h"
 
 #endif /* INC_STM3F407XX_H_ */
 //

@@ -1,10 +1,28 @@
-20:43:20 **** Incremental Build of configuration Debug for project stm32f4xx_driver ****
+20:15:55 **** Incremental Build of configuration Debug for project stm32f4xx_driver ****
 make -j4 all 
+arm-none-eabi-gcc "../drivers/Src/stm32f407xx_i2c_driver.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F407G_DISC1 -DSTM32F4 -DSTM32F407VGTx -c -I../Inc -I"D:/MCU/MCU1/stm32f4xx_driver/drivers/Inc" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"drivers/Src/stm32f407xx_i2c_driver.d" -MT"drivers/Src/stm32f407xx_i2c_driver.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "drivers/Src/stm32f407xx_i2c_driver.o"
+../drivers/Src/stm32f407xx_i2c_driver.c: In function 'I2C_MasterSendData':
+../drivers/Src/stm32f407xx_i2c_driver.c:256:12: warning: format '%x' expects argument of type 'unsigned int', but argument 2 has type 'uint32_t' {aka 'volatile long unsigned int'} [-Wformat=]
+  256 |   printf("%x\n",pI2CHandle->pI2Cx->DR);
+      |           ~^    ~~~~~~~~~~~~~~~~~~~~~
+      |            |                     |
+      |            unsigned int          uint32_t {aka volatile long unsigned int}
+      |           %lx
+../drivers/Src/stm32f407xx_i2c_driver.c: In function 'I2C_MasterReceiveData':
+../drivers/Src/stm32f407xx_i2c_driver.c:346:4: warning: value computed is not used [-Wunused-value]
+  346 |    *pRxBuffer++;
+      |    ^~~~~~~~~~~~
+arm-none-eabi-gcc -o "stm32f4xx_driver.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\MCU\MCU1\stm32f4xx_driver\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="stm32f4xx_driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: stm32f4xx_driver.elf
+ 
 arm-none-eabi-size   stm32f4xx_driver.elf 
+arm-none-eabi-objdump -h -S  stm32f4xx_driver.elf  > "stm32f4xx_driver.list"
    text	   data	    bss	    dec	    hex	filename
-   9764	    112	   1656	  11532	   2d0c	stm32f4xx_driver.elf
+   8656	    144	   1664	  10464	   28e0	stm32f4xx_driver.elf
 Finished building: default.size.stdout
  
+Finished building: stm32f4xx_driver.list
+ 
 
-20:43:20 Build Finished. 0 errors, 0 warnings. (took 392ms)
+20:15:57 Build Finished. 0 errors, 2 warnings. (took 1s.867ms)
 
