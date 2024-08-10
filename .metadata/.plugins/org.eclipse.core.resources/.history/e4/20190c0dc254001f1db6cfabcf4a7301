@@ -17,8 +17,8 @@
 I2C_Handle_t I2C1Handle;
 I2C_Handle_t I2C2Handle;
 
-// uint8_t some_data[] = {0x11,0x22,0x33};
-uint8_t some_data[] = "hello world\n";
+uint8_t some_data[] = {0x11,0x22,0x33,x044};
+// uint8_t some_data[] = "hello world\n";
 #define MY_ADDR 0x61
 
 #define SLAVE_ADDR  0x68
@@ -160,9 +160,10 @@ int main(void)
 
  		//send some data to the slave
 
- 		I2C_MasterSendData(&I2C1Handle,some_data,strlen((char*)some_data), SLAVE_ADDR, 0, &I2C2Handle);
+ 		// I2C_MasterSendData(&I2C1Handle,some_data,12, SLAVE_ADDR, 0, &I2C2Handle);
         
-        // int len = sizeof(some_data)/sizeof(some_data[0]);
-        // I2C_MasterSendData(&I2C1Handle,some_data, len, SLAVE_ADDR, 0, &I2C2Handle);
+        int len = sizeof(some_data)/sizeof(some_data[0]);
+        I2C_MasterSendData(&I2C1Handle,some_data, len, SLAVE_ADDR, 0, &I2C2Handle);
+ 		// printf("%d\n",I2C1Handle.pI2Cx->DR);
     }
 }
