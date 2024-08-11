@@ -8,7 +8,6 @@ static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx);
 static void I2C_ExecuteAddressPhaseWrite(I2C_RegDef_t *pI2Cx, uint8_t SlaveAddr);
 static void I2C_ExecuteAddressPhaseRead(I2C_RegDef_t *pI2Cx, uint8_t SlaveAddr);
 static void I2C_ClearADDRFlag(I2C_Handle_t *pI2CHandle);
-static void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx);
 
 static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx)
 {
@@ -69,7 +68,7 @@ static void I2C_ClearADDRFlag(I2C_Handle_t *pI2CHandle)
 	}
 }
 
-static void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx)
+void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx)
 {
 	pI2Cx->CR1 |= (1<<I2C_CR1_STOP);
 }
@@ -132,6 +131,25 @@ uint32_t RCC_GetPCLK1Value(void)
 	return pclk1;
 }
 
+void I2C_SlaveEnableDisableCallbackEvents(I2C_RegDef_t *pI2Cx, uint8_t EnOrDi)
+{
+	if(EnOrDi == ENABLE)
+	{
+		pI2Cx->CR2 |=  (1 << I2C_CR2_ITBUFEN);
+		pI2Cx->CR2 |=  (1 << I2C_CR2_ITEVTEN);
+		pI2Cx->CR2 |=  (1 << I2C_CR2_ITERREN);
+
+	}
+	else
+	{
+		pI2Cx->CR2 &=  ~(1 << I2C_CR2_ITBUFEN);
+		pI2Cx->CR2 &=  ~(1 << I2C_CR2_ITEVTEN);
+		pI2Cx->CR2 &=  ~(1 << I2C_CR2_ITERREN);
+
+	}
+
+}
+
 void I2C_PeripheralControl(I2C_RegDef_t *pI2Cx, uint8_t EnOrDi)
 {
 	if(EnOrDi == ENABLE)
@@ -162,6 +180,7 @@ void I2C_Init(I2C_Handle_t *pI2CHandle)
 	pI2CHandle->pI2Cx->CR2 = tempreg & (0X3F);
 
 	//program the device own address
+	tempreg = 0;
 	tempreg |= pI2CHandle->I2C_Config.I2C_DeviceAddress << 1;
 	tempreg |= (1<<14);
 	pI2CHandle->pI2Cx->OAR1 = tempreg;
@@ -239,7 +258,6 @@ void I2C_MasterSendData(I2C_Handle_t *pI2CHandle ,uint8_t *pTxBuffer, uint32_t L
 	//6.Send the data until len becomes 0
 	for(int i = Len; i>0; i--)
 	{
-		
 		while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_TXE)); //Wait till TXE is set
 
 		pI2CHandle->pI2Cx->DR = *pTxBuffer;
@@ -382,6 +400,8 @@ uint8_t  I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint3
 		//Implement the code to enable ITERREN Control Bit
 		pI2CHandle->pI2Cx->CR2 |= ( 1 << I2C_CR2_ITERREN);
 
+
+		I2C_SlaveEnableDisableCallbackEvents(I2C2, ENABLE);
 	}
 
 	return busystate;
@@ -540,8 +560,72 @@ void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority)
 
 }
 
+static void I2C_MasterHandleTXEInterrupt(I2C_Handle_t *pI2CHandle,I2C_Handle_t *pI2CHandle2)
+{
 
-void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
+	if(pI2CHandle->TxLen > 0)
+	{
+		printf("txe\n");
+		//1. load the data in to DR
+		pI2CHandle->pI2Cx->DR = *(pI2CHandle->pTxBuffer);
+
+		//2. decrement the TxLen
+		pI2CHandle->TxLen--;
+
+		//3. Increment the buffer address
+		pI2CHandle->pTxBuffer++;
+
+		// while(!I2C_GetFlagStatus(pI2CHandle2->pI2Cx, I2C_FLAG_RXNE)); //Wait till RXNE is set
+		// int dummy_read = pI2CHandle2->pI2Cx->DR; //DR is read before next byte is received
+		// (void)dummy_read; //avoid unused warning
+	}
+
+}
+
+static void I2C_MasterHandleRXNEInterrupt(I2C_Handle_t *pI2CHandle )
+{
+	printf("rxne\n");
+	//We have to do the data reception
+	if(pI2CHandle->RxSize == 1)
+	{
+		*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->DR;
+		pI2CHandle->RxLen--;
+
+	}
+
+
+	if(pI2CHandle->RxSize > 1)
+	{
+		if(pI2CHandle->RxLen == 2)
+		{
+			//clear the ack bit
+			I2C_ManageAcking(pI2CHandle->pI2Cx,DISABLE);
+		}
+
+			//read DR
+			*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->DR;
+			pI2CHandle->pRxBuffer++;
+			pI2CHandle->RxLen--;
+	}
+
+	if(pI2CHandle->RxLen == 0 )
+	{
+		//close the I2C data reception and notify the application
+
+		//1. generate the stop condition
+		if(pI2CHandle->Sr == I2C_DISABLE_SR)
+			I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+
+		//2 . Close the I2C rx
+		I2C_CloseReceiveData(pI2CHandle);
+
+		//3. Notify the application
+		I2C_ApplicationEventCallback(pI2CHandle,I2C_EV_RX_CMPLT);
+	}
+}
+
+
+void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle, I2C_Handle_t *pI2CHandle2)
 {
 	//Interrupt handling for master and slave mode of a device
 
@@ -639,17 +723,16 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 		if(pI2CHandle->TxRxState == I2C_BUSY_IN_TX)
 		{
 			//BTF, TXE = 1
-			if(pI2CHandle->TxLen > 0)
-			{
-				//1. load the data in to DR
-				pI2CHandle->pI2Cx->DR = *(pI2CHandle->pTxBuffer);
-				
-				//2. decrement the TxLen
-				pI2CHandle->TxLen--;	
-
-				//2. Increment the buffer address
-				pI2CHandle->pTxBuffer++;	
-			}
+			I2C_MasterHandleTXEInterrupt(pI2CHandle,pI2CHandle2);
+		}
+	}
+	else
+	{
+		//slave
+		//make sure that slave is really in transmitter mode
+		if(pI2CHandle->pI2Cx->SR2 & (1<<I2C_SR2_TRA))
+		{
+			I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_REQ);
 		}
 	}
 
@@ -664,41 +747,26 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 			if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
 			{
 				//we have to do the data reception
-				if(pI2CHandle->RxSize == 1)
-				{
-					*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->DR;
-				
-					pI2CHandle->RxLen--;	
-		
-				}
-				if(pI2CHandle->RxSize > 1)
-				{
-					if(pI2CHandle->RxLen == 2)
-					{
-						I2C_ManageAcking(pI2CHandle->pI2Cx, DISABLE);
-					}
-					*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->DR;
-					pI2CHandle->pRxBuffer++;
-					pI2CHandle->RxLen--;	
-		
-				}
-				if(pI2CHandle->RxLen == 0)
-				{
-					//1. generate STOP condition
-					if(pI2CHandle->Sr == I2C_DISABLE_SR)
-						I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
-
-					//2. close i2c rx
-					I2C_CloseReceiveData(pI2CHandle);
-
-					//3. notify the application 
-					I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);			
-				}
+				I2C_MasterHandleRXNEInterrupt(pI2CHandle);			
 			}
 		}
-		
-
+		else
+		{
+			int rcv_data = I2C_SlaveReceiveData(pI2CHandle->pI2Cx);
+			printf("%d\n",rcv_data);
+		}
+	
 	}
+	else
+	{
+		//slave
+		//make sure that slave is really in transmitter mode
+		if((pI2CHandle->pI2Cx->SR2 & (1<<I2C_SR2_TRA)) == 0)
+		{
+			I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_RCV);
+		}
+	}
+
 }
 
 void I2C_CloseReceiveData(I2C_Handle_t *pI2CHandle)
@@ -714,8 +782,8 @@ void I2C_CloseReceiveData(I2C_Handle_t *pI2CHandle)
 
 	if(pI2CHandle->I2C_Config.I2C_AckControl == I2C_ACK_ENABLE)
 	{
-		I2C_ManageAcking(pI2CHandle->pI2Cx, ENABLE);
 	}
+		I2C_ManageAcking(pI2CHandle->pI2Cx, ENABLE);
 }
 void I2C_CloseSendData(I2C_Handle_t *pI2CHandle)
 {

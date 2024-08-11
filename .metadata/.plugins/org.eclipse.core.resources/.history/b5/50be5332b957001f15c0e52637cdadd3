@@ -13,12 +13,12 @@
  SDA: PB11, PF0
 
 */
-
+uint8_t RxComplt = SET;
 I2C_Handle_t I2C1Handle;
 I2C_Handle_t I2C2Handle;
 
-// uint8_t some_data[] = {0x11,0x22,0x33};
-uint8_t some_data[] = "hello world\n";
+uint8_t some_data[] = {0x11};
+// uint8_t some_data[] = "hello world\n";
 #define MY_ADDR 0x61
 
 #define SLAVE_ADDR  0x68
@@ -122,7 +122,12 @@ int main(void)
 
     I2C1_Inits();
 
+
+    //I2C IRQ configuration
+    I2C_IRQInterruptConfig(IRQ_NO_I2C1_EV, ENABLE);
+    I2C_IRQInterruptConfig(IRQ_NO_I2C1_ER, ENABLE);
     I2C_PeripheralControl(I2C1, ENABLE);
+
 
     //ack bit is made 1 after PE = 1
 	I2C_ManageAcking(I2C1, I2C_ACK_ENABLE);
@@ -131,7 +136,9 @@ int main(void)
     I2C2_GPIOinits();
 
     I2C2_Inits();
-
+    //I2C IRQ configuration
+    I2C_IRQInterruptConfig(IRQ_NO_I2C2_EV, ENABLE);
+    I2C_IRQInterruptConfig(IRQ_NO_I2C2_ER, ENABLE);
     I2C_PeripheralControl(I2C2, ENABLE);
 
     //ack bit is made 1 after PE = 1
@@ -147,7 +154,60 @@ int main(void)
 
  		//send some data to the slave
 
- 		I2C_MasterSendData(&I2C1Handle,some_data,strlen((char*)some_data), SLAVE_ADDR, 0, &I2C2Handle);
-        
+ 		// I2C_MasterSendData(&I2C1Handle,some_data,strlen((char*)some_data), SLAVE_ADDR, 0, &I2C2Handle);
+        // while(I2C_MasterSendDataIT(&I2C1Handle,some_data,strlen((char*)some_data),SLAVE_ADDR, 0, &I2C2Handle) != I2C_READY);
+        I2C_MasterSendDataIT(&I2C1Handle,some_data,1,SLAVE_ADDR, 0, &I2C2Handle);
+
     }
+}
+
+void I2C1_EV_IRQHandler(void)
+{   
+    // printf("i2c1 ev\n");
+    I2C_EV_IRQHandling(&I2C1Handle, &I2C2Handle);
+}
+
+void I2C1_ER_IRQHandler(void)
+{
+    // printf("i2c1 ev\n");
+    I2C_ER_IRQHandling(&I2C1Handle);
+}
+
+void I2C2_EV_IRQHandler(void)
+{   
+    // printf("i2c2 ev\n");
+    I2C_EV_IRQHandling(&I2C2Handle, &I2C1Handle);
+}
+
+void I2C2_ER_IRQHandler(void)
+{
+    // printf("i2c2 er\n");
+    I2C_ER_IRQHandling(&I2C2Handle);
+}
+
+void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle,uint8_t AppEv)
+{
+    if(AppEv == I2C_EV_TX_CMPLT)
+    {
+        printf("Tx is complete\n");
+    }
+    else if(AppEv == I2C_EV_RX_CMPLT)
+    {
+        printf("Rx is complete\n");
+        RxComplt = SET;
+    } 
+    else if(AppEv == I2C_ERROR_AF)
+    {
+        printf("Error: Ack failure\n");
+
+        // in master ack failure happens when slave fails to send ack for the byte
+        // sent from master
+        I2C_CloseSendData(pI2CHandle);
+
+        // /generate stop condition to release bus
+        I2C_GenerateStopCondition(I2C1);
+
+        //Hang in infinite loop
+        while(1);
+    } 
 }

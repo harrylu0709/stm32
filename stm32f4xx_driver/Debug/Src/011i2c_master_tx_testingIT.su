@@ -1,0 +1,12 @@
+../Src/011i2c_master_tx_testingIT.c:26:6:delay	16	static
+../Src/011i2c_master_tx_testingIT.c:31:6:GPIO_ButtonInit	24	static
+../Src/011i2c_master_tx_testingIT.c:45:6:I2C1_GPIOinits	24	static
+../Src/011i2c_master_tx_testingIT.c:74:6:I2C2_GPIOinits	24	static
+../Src/011i2c_master_tx_testingIT.c:94:6:I2C1_Inits	8	static
+../Src/011i2c_master_tx_testingIT.c:105:6:I2C2_Inits	8	static
+../Src/011i2c_master_tx_testingIT.c:116:5:main	16	static
+../Src/011i2c_master_tx_testingIT.c:165:6:I2C1_EV_IRQHandler	8	static
+../Src/011i2c_master_tx_testingIT.c:171:6:I2C1_ER_IRQHandler	8	static
+../Src/011i2c_master_tx_testingIT.c:177:6:I2C2_EV_IRQHandler	8	static
+../Src/011i2c_master_tx_testingIT.c:183:6:I2C2_ER_IRQHandler	8	static
+../Src/011i2c_master_tx_testingIT.c:189:6:I2C_ApplicationEventCallback	16	static

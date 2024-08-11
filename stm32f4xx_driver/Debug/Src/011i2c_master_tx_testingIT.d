@@ -1,4 +1,4 @@
-Src/010i2c_master_tx_testing.o: ../Src/010i2c_master_tx_testing.c \
+Src/011i2c_master_tx_testingIT.o: ../Src/011i2c_master_tx_testingIT.c \
  D:/MCU/MCU1/stm32f4xx_driver/drivers/Inc/stm32f407xx.h \
  D:/MCU/MCU1/stm32f4xx_driver/drivers/Inc/stm32f407xx_gpio_driver.h \
  D:/MCU/MCU1/stm32f4xx_driver/drivers/Inc/stm32f407xx.h \
