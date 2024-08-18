@@ -17,8 +17,10 @@ uint8_t RxComplt = SET;
 I2C_Handle_t I2C1Handle;
 I2C_Handle_t I2C2Handle;
 
-// uint8_t some_data[] = {0x11,0x22,0x33,0x44};
-uint8_t some_data[] = "hello world\n";
+// uint8_t some_data[] = "hello world\n";
+uint8_t some_data[] = "slave send\n";
+
+uint8_t rcv_buf[32];
 #define MY_ADDR 0x61
 
 #define SLAVE_ADDR  0x68
@@ -115,6 +117,8 @@ void I2C2_Inits(void)
 
 int main(void)
 {
+    uint8_t commandcode;
+    uint8_t len;
 	// printf("start\n");
     GPIO_ButtonInit();
 
@@ -127,7 +131,7 @@ int main(void)
     I2C_IRQInterruptConfig(IRQ_NO_I2C1_EV, ENABLE);
     I2C_IRQInterruptConfig(IRQ_NO_I2C1_ER, ENABLE);
     I2C_PeripheralControl(I2C1, ENABLE);
-
+    // I2C_IRQPriorityConfig();
 
     //ack bit is made 1 after PE = 1
 	I2C_ManageAcking(I2C1, I2C_ACK_ENABLE);
@@ -155,10 +159,34 @@ int main(void)
  		//send some data to the slave
 
  		// I2C_MasterSendData(&I2C1Handle,some_data,strlen((char*)some_data), SLAVE_ADDR, 0);
-        while(I2C_MasterSendDataIT(&I2C1Handle,some_data,strlen((char*)some_data),SLAVE_ADDR, 0) != I2C_READY);
+        // while(I2C_MasterSendDataIT(&I2C1Handle,some_data,strlen((char*)some_data),SLAVE_ADDR, 0) != I2C_READY);
         // int len = sizeof(some_data)/sizeof(some_data[0]);
         // I2C_MasterSendDataIT(&I2C1Handle,some_data,len,SLAVE_ADDR, 0);
 
+        commandcode = 0x51;
+        // printf("1\n");
+        while(I2C_MasterSendDataIT(&I2C1Handle, &commandcode, 1, SLAVE_ADDR, I2C_ENABLE_SR) != I2C_READY);
+        // printf("2\n");
+		while(I2C_MasterReceiveDataIT(&I2C1Handle, &len, 1, SLAVE_ADDR, I2C_ENABLE_SR)!= I2C_READY);
+        // printf("3\n");
+
+		commandcode = 0x52;
+		while(I2C_MasterSendDataIT(&I2C1Handle, &commandcode, 1, SLAVE_ADDR, I2C_ENABLE_SR) != I2C_READY);
+		while(I2C_MasterReceiveDataIT(&I2C1Handle, rcv_buf,len, SLAVE_ADDR, I2C_DISABLE_SR)!= I2C_READY);
+
+		RxComplt = RESET;
+
+		// //wait till rx completes
+        while(RxComplt != SET)
+        {
+            
+        }
+
+		rcv_buf[len+1] = '\0';
+
+		printf("Data : %s",rcv_buf);
+
+		RxComplt = RESET;
     }
 }
 
@@ -170,7 +198,7 @@ void I2C1_EV_IRQHandler(void)
 
 void I2C1_ER_IRQHandler(void)
 {
-    // printf("i2c1 ev\n");
+    // printf("i2c1 er\n");
     I2C_ER_IRQHandling(&I2C1Handle);
 }
 
@@ -186,15 +214,64 @@ void I2C2_ER_IRQHandler(void)
     I2C_ER_IRQHandling(&I2C2Handle);
 }
 
+#if 1
 void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle,uint8_t AppEv)
 {
-    if(AppEv == I2C_EV_TX_CMPLT)
+    static uint8_t commandCode = 0;
+    static uint8_t cnt = 0;
+    if(AppEv == I2C_EV_DATA_REQ)
     {
-        printf("Tx is complete\n");
+        // // printf("Tx is complete\n");
+        if(commandCode == 0x51)
+        {      
+            // printf("s t len\n");
+            I2C_SlaveSendData(pI2CHandle->pI2Cx, strlen((char*)some_data));
+        }
+        else if (commandCode == 0x52)
+		{
+			//Send the contents of Tx_buf
+            // printf("ac %d\n",cnt);
+			I2C_SlaveSendData(pI2CHandle->pI2Cx, some_data[cnt++]);
+
+		}
+    }
+    else if(AppEv == I2C_EV_TX_CMPLT)
+    {
+    	//  printf("Tx is completed\n");
     }
     else if(AppEv == I2C_EV_RX_CMPLT)
     {
-        printf("Rx is complete\n");
+        // printf("Rx is complete\n");
+        // RxComplt = SET;
+        commandCode = I2C_SlaveReceiveData(pI2CHandle->pI2Cx);
+        // printf("a s r %d\n",commandCode);
+        // if(commandCode == 0x52)
+        // {      
+        //     pI2CHandle->pI2Cx->SR2 |= (1<<I2C_SR2_TRA);
+        //     // printf("slave trans call\n");
+        //     I2C_SlaveSendData(pI2CHandle->pI2Cx, strlen((char*)some_data));
+        // }
+        // if(commandCode == 0x51)
+        // {      
+        //     pI2CHandle->pI2Cx->SR2 |= (1<<I2C_SR2_TRA);
+            
+        //     I2C_SlaveSendData(pI2CHandle->pI2Cx, 0x55);
+
+        //     int len = strlen((char*)some_data);
+        //     // while(len > 0)
+        //     // {
+        //     //     // printf("txe\n");
+        //     //     //1. load the data in to DR
+        //     //     uint8_t ch = some_data[0];
+        //     //     printf("%d\n",ch);
+        //     //     I2C_SlaveSendData(pI2CHandle->pI2Cx, ch);
+        //     //     len--;
+        //     // }
+        //     // // pI2CHandle->pI2Cx->SR2 |= (1<<I2C_SR2_TRA);
+        //     // printf("slave trans call\n");
+            
+        // }
+        // printf("i2c1 %d\n",I2C1->DR);
         RxComplt = SET;
     } 
     else if(AppEv == I2C_ERROR_AF)
@@ -212,3 +289,45 @@ void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle,uint8_t AppEv)
         while(1);
     } 
 }
+
+#else
+void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle,uint8_t AppEv)
+{
+
+	static uint8_t commandCode = 0;
+	static  uint8_t Cnt = 0;
+
+	if(AppEv == I2C_EV_DATA_REQ)
+	{
+		//Master wants some data. slave has to send it
+		if(commandCode == 0x51)
+		{
+			//send the length information to the master
+			I2C_SlaveSendData(pI2CHandle->pI2Cx,strlen((char*)Tx_buf));
+		}
+        else if (commandCode == 0x52)
+		{
+			//Send the contents of Tx_buf
+			I2C_SlaveSendData(pI2CHandle->pI2Cx,Tx_buf[Cnt++]);
+
+		}
+	}else if (AppEv == I2C_EV_DATA_RCV)
+	{
+		//Data is waiting for the slave to read . slave has to read it
+		commandCode = I2C_SlaveReceiveData(pI2CHandle->pI2Cx);
+
+	}else if (AppEv == I2C_ERROR_AF)
+	{
+		//This happens only during slave txing .
+		//Master has sent the NACK. so slave should understand that master doesnt need
+		//more data.
+		commandCode = 0xff;
+		Cnt = 0;
+	}
+	else if (AppEv == I2C_EV_STOP)
+	{
+		//This happens only during slave reception .
+		//Master has ended the I2C communication with the slave.
+	}
+}
+#endif
