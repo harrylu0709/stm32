@@ -429,8 +429,8 @@ typedef struct
 #define IRQ_NO_I2C2_ER     34
 #define IRQ_NO_I2C3_EV     79
 #define IRQ_NO_I2C3_ER     80
-//#define IRQ_NO_USART1	    37
-//#define IRQ_NO_USART2	    38
+#define IRQ_NO_USART1	    37
+#define IRQ_NO_USART2	    38
 //#define IRQ_NO_USART3	    39
 //#define IRQ_NO_UART4	    52
 //#define IRQ_NO_UART5	    53
@@ -535,7 +535,7 @@ typedef struct
 #define I2C_CR2_FREQ				 	0
 #define I2C_CR2_ITERREN				 	8
 #define I2C_CR2_ITEVTEN				 	9
-#define I2C_CR2_ITBUFEN 			    10
+#define I2C_CR2_ITBUFEN 			    10 //buffer interrupt enable, txe or rxne
 
 /*
  * Bit position definitions I2C_OAR1
@@ -652,7 +652,8 @@ typedef struct
 #include "stm32f407xx_gpio_driver.h"
 #include "stm32f407xx_spi_driver.h"
 #include "stm32f407xx_i2c_driver.h"
-
+#include "stm32f407xx_usart_driver.h"
+#include "stm32f407xx_rcc_driver.h"
 #endif /* INC_STM3F407XX_H_ */
 //
 ///*

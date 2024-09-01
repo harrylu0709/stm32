@@ -1,7 +1,6 @@
 #include "stm32f407xx_i2c_driver.h"
 
-uint16_t AHB_PreScaler[8] = {2,4,8,16,64,128,256,512};
-uint8_t APB1_PreScaler[4] = { 2, 4 , 8, 16};
+
 
 
 static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx);
@@ -71,64 +70,6 @@ static void I2C_ClearADDRFlag(I2C_Handle_t *pI2CHandle)
 void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx)
 {
 	pI2Cx->CR1 |= (1<<I2C_CR1_STOP);
-}
-
-uint32_t RCC_GetPLLOutputClock(void)
-{
-	return 0;
-}
-
-
-uint32_t RCC_GetPCLK1Value(void)
-{
-	uint32_t pclk1, SystemClk;
-
-	uint8_t clksrc, temp, ahbp, apb1p;
-
-	clksrc = ((RCC->CFGR >> 2) & 0x3);
-
-	if(clksrc == 0)
-	{
-		SystemClk = 16000000;	
-	}
-	else if (clksrc == 1)
-	{
-		SystemClk = 8000000;	
-	}
-	else if(clksrc == 2)
-	{
-		SystemClk = RCC_GetPLLOutputClock();	
-	}
-
-	//for ahb
-
-	temp = ((RCC->CFGR >> 4) & 0xF);
-
-	if(temp < 8)
-	{
-		ahbp = 1;
-	}
-	else
-	{
-		ahbp = AHB_PreScaler[temp - 8];	
-	}
-
-	//for apb1
-
-	temp = ((RCC->CFGR >> 10) & 0x7);
-
-	if(temp < 4)
-	{
-		apb1p = 1;
-	}
-	else
-	{
-		apb1p = APB1_PreScaler[temp - 4];	
-	}
-
-	pclk1 = (SystemClk/ahbp) / apb1p;
-
-	return pclk1;
 }
 
 void I2C_SlaveEnableDisableCallbackEvents(I2C_RegDef_t *pI2Cx, uint8_t EnOrDi)
@@ -375,7 +316,7 @@ void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle ,uint8_t *pRxBuffer, uint32_
 
  */
 //just trigger the start condition
-uint8_t  I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint32_t Len,uint8_t SlaveAddr,uint8_t Sr)
+uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint32_t Len,uint8_t SlaveAddr,uint8_t Sr)
 {
 
 	uint8_t busystate = pI2CHandle->TxRxState;
@@ -401,11 +342,9 @@ uint8_t  I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint3
 		pI2CHandle->pI2Cx->CR2 |= ( 1 << I2C_CR2_ITERREN);
 
 
-		I2C_SlaveEnableDisableCallbackEvents(I2C2, ENABLE);
+		I2C_SlaveEnableDisableCallbackEvents(I2C2, ENABLE);//add I2C interrupt en/disable here
 	}
-
 	return busystate;
-
 }
 
 /*********************************************************************
@@ -424,12 +363,10 @@ uint8_t  I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint3
  */
 uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer, uint8_t Len, uint8_t SlaveAddr,uint8_t Sr)
 {
-
 	uint8_t busystate = pI2CHandle->TxRxState;
 
 	if( (busystate != I2C_BUSY_IN_TX) && (busystate != I2C_BUSY_IN_RX))
 	{
-		// printf("mit\n");
 		pI2CHandle->pRxBuffer = pRxBuffer;
 		pI2CHandle->RxLen = Len;
 		pI2CHandle->TxRxState = I2C_BUSY_IN_RX;
@@ -630,6 +567,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 {
 	//Interrupt handling for master and slave mode of a device
 
+
 	uint32_t temp1, temp2, temp3;
 
 	temp1 = pI2CHandle->pI2Cx->CR2 & (1 << I2C_CR2_ITEVTEN);
@@ -740,8 +678,6 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 			{
 				// printf("s t\n");
 				I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_REQ);
-				// I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TX_CMPLT);			
-
 			}
 		}
 
@@ -785,7 +721,32 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 
 		}
 	}
+#if 0
+	if(temp1 && temp2 && temp3)
+	{
+		//check device mode .
+		if(pI2CHandle->pI2Cx->SR2 & ( 1 << I2C_SR2_MSL))
+		{
+			//The device is master
 
+			//RXNE flag is set
+			if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
+			{
+				I2C_MasterHandleRXNEInterrupt(pI2CHandle);
+
+			}
+
+		}else
+		{
+			//slave
+			//make sure that the slave is really in receiver mode
+			if(!(pI2CHandle->pI2Cx->SR2 & ( 1 << I2C_SR2_TRA)))
+			{
+				I2C_ApplicationEventCallback(pI2CHandle,I2C_EV_DATA_RCV);
+			}
+		}
+	}
+#endif
 }
 
 void I2C_CloseReceiveData(I2C_Handle_t *pI2CHandle)
