@@ -5,29 +5,26 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Src/015rtc.c \
-../Src/syscalls.c \
-../Src/sysmem.c 
+../bsp/ds1307.c \
+../bsp/lcd.c 
 
 OBJS += \
-./Src/015rtc.o \
-./Src/syscalls.o \
-./Src/sysmem.o 
+./bsp/ds1307.o \
+./bsp/lcd.o 
 
 C_DEPS += \
-./Src/015rtc.d \
-./Src/syscalls.d \
-./Src/sysmem.d 
+./bsp/ds1307.d \
+./bsp/lcd.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-Src/%.o Src/%.su: ../Src/%.c Src/subdir.mk
+bsp/%.o bsp/%.su: ../bsp/%.c bsp/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F407G_DISC1 -DSTM32F4 -DSTM32F407VGTx -c -I../Inc -I"D:/MCU/MCU1/stm32f4xx_driver/drivers/Inc" -I"D:/MCU/MCU1/stm32f4xx_driver/bsp" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
 
-clean: clean-Src
+clean: clean-bsp
 
-clean-Src:
-	-$(RM) ./Src/015rtc.d ./Src/015rtc.o ./Src/015rtc.su ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su
+clean-bsp:
+	-$(RM) ./bsp/ds1307.d ./bsp/ds1307.o ./bsp/ds1307.su ./bsp/lcd.d ./bsp/lcd.o ./bsp/lcd.su
 
-.PHONY: clean-Src
+.PHONY: clean-bsp
 

@@ -194,7 +194,7 @@ void I2C_MasterSendData(I2C_Handle_t *pI2CHandle ,uint8_t *pTxBuffer, uint32_t L
 	//5. clear the ADDR flag according to its software sequence
 	//Note: Until ADDR is cleared SCL will be stretched(pulled to low)
 	I2C_ClearADDRFlag(pI2CHandle);
-	I2C_ClearADDRFlag(pI2CHandle2);
+	if(pI2CHandle2)	I2C_ClearADDRFlag(pI2CHandle2);
 
 	//6.Send the data until len becomes 0
 	for(int i = Len; i>0; i--)
@@ -203,10 +203,12 @@ void I2C_MasterSendData(I2C_Handle_t *pI2CHandle ,uint8_t *pTxBuffer, uint32_t L
 
 		pI2CHandle->pI2Cx->DR = *pTxBuffer;
 		pTxBuffer++;
-
-		while(!I2C_GetFlagStatus(pI2CHandle2->pI2Cx, I2C_FLAG_RXNE)); //Wait till RXNE is set
-		int dummy_read = pI2CHandle2->pI2Cx->DR; //DR is read before next byte is received
-		(void)dummy_read; //avoid unused warning
+		if(pI2CHandle2)
+		{
+			while(!I2C_GetFlagStatus(pI2CHandle2->pI2Cx, I2C_FLAG_RXNE)); //Wait till RXNE is set
+			int dummy_read = pI2CHandle2->pI2Cx->DR; //DR is read before next byte is received
+			(void)dummy_read; //avoid unused warning			
+		}
 	} 
 	
 	//7. when Len becomes zero wait for TXE = 1 and BTF = 1 before generating the STOP condition
