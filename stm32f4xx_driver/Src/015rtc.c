@@ -17,7 +17,7 @@ void init_systick_timer(uint32_t tick_hz)
 	uint32_t *pSCSR = (uint32_t*)0xE000E010;
 
     /* calculation of reload value */
-    uint32_t count_value = (SYSTICK_TIM_CLK/tick_hz)-1;
+    uint32_t count_value = (SYSTICK_TIM_CLK/tick_hz)-1;// tick_hz = 1 means 1 second
 
     //Clear the value of SVR
     *pSRVR &= ~(0x00FFFFFFFF);
