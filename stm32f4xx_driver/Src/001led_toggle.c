@@ -6,11 +6,48 @@
  */
 
 #include "stm32f407xx.h"
+#define SYSTICK_TIM_CLK   16000000UL
 
 void delay(void)
 {
 	for(uint32_t i =0; i < 500000 ; i++);
 
+}
+
+void delay_systick(uint32_t tick_hz)
+{
+	uint32_t *pSRVR = (uint32_t*)0xE000E014;
+	uint32_t *pSCSR = (uint32_t*)0xE000E010;
+	uint32_t temp;
+    /* calculation of reload value */
+    uint32_t count_value = (SYSTICK_TIM_CLK/tick_hz)-1;// if 1 second, then tick_hz = 1, if 1 millisecond, then tick_hz = 1000
+
+    //Clear the value of SVR
+    *pSRVR &= ~(0x00FFFFFFFF);
+
+	*pSCSR &= ~(0x00FFFFFFFF);
+
+    //load the value in to SVR
+    *pSRVR |= count_value;
+
+    //do some settings
+    *pSCSR |= ( 1 << 2);  //Indicates the clock source, processor clock source (HSI = 16MHz)
+
+    // *pSCSR |= ( 1 << 1); //Enables SysTick exception request:
+
+    //enable the systick
+    *pSCSR |= ( 1 << 0); //enables the counter
+
+	do
+	{
+		temp = *pSCSR;
+	} while ((temp & (0x01) && (!(temp & (1<<16)))));
+	/*
+	
+	SysTick Control and Status Register
+	[16] COUNTFLAG : Returns 1 if timer counted to 0 since last time this was read. 
+	
+	*/
 }
 
 int main(void)
@@ -31,7 +68,7 @@ int main(void)
 	while(1)
 	{
 		GPIO_ToggleOutputPin(GPIOD, GPIO_PIN_NO_12);
-		delay();
+		delay_systick(1);
 	}
 
 	return 0;

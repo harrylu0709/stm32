@@ -32,7 +32,7 @@ void init_systick_timer(uint32_t tick_hz)
     //do some settings
     *pSCSR |= ( 1 << 2);  //Indicates the clock source, processor clock source
 
-    *pSCSR |= ( 1 << 1); //Enables SysTick exception request:
+    // *pSCSR |= ( 1 << 1); //Enables SysTick exception request:
 
     //enable the systick
     *pSCSR |= ( 1 << 0); //enables the counter
@@ -124,13 +124,17 @@ int main(void)
 	lcd_display_return_home();
 #endif
 
-	if(ds1307_init()){
-		printf("RTC init has failed\n");
-		while(1);
+	// if(ds1307_init()){
+	// 	printf("RTC init has failed\n");
+	// 	while(1);
+	// }
+	while(1)
+	{
+		init_systick_timer(1);
+		printf("test\n");
 	}
 
-	init_systick_timer(1);
-
+	
 	current_date.day = FRIDAY;
 	current_date.date = 15;
 	current_date.month = 1;
