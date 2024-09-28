@@ -1,4 +1,4 @@
-15:21:29 **** Incremental Build of configuration Debug for project stm32f4xx_driver ****
+19:37:16 **** Incremental Build of configuration Debug for project stm32f4xx_driver ****
 make -j4 all 
 arm-none-eabi-gcc "../Src/001led_toggle.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F407G_DISC1 -DSTM32F4 -DSTM32F407VGTx -c -I../Inc -I"D:/MCU/MCU1/stm32f4xx_driver/drivers/Inc" -I"D:/MCU/MCU1/stm32f4xx_driver/bsp" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Src/001led_toggle.d" -MT"Src/001led_toggle.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/001led_toggle.o"
 arm-none-eabi-gcc -o "stm32f4xx_driver.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\MCU\MCU1\stm32f4xx_driver\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="stm32f4xx_driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
@@ -7,11 +7,11 @@ Finished building target: stm32f4xx_driver.elf
 arm-none-eabi-size   stm32f4xx_driver.elf 
 arm-none-eabi-objdump -h -S  stm32f4xx_driver.elf  > "stm32f4xx_driver.list"
    text	   data	    bss	    dec	    hex	filename
-   2176	      8	   1568	   3752	    ea8	stm32f4xx_driver.elf
+   2328	      8	   1568	   3904	    f40	stm32f4xx_driver.elf
 Finished building: default.size.stdout
  
 Finished building: stm32f4xx_driver.list
  
 
-15:21:30 Build Finished. 0 errors, 0 warnings. (took 1s.166ms)
+19:37:18 Build Finished. 0 errors, 0 warnings. (took 1s.786ms)
 
