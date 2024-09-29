@@ -1,0 +1,80 @@
+20:25:42 **** Incremental Build of configuration Debug for project GPIO_I2C ****
+make -j4 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F407G_DISC1 -DSTM32F4 -DSTM32F407VGTx -c -I../Inc -I"D:/MCU/MCU1/GPIO_I2C/drivers/Inc" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Src/main.o"
+In file included from ../Src/main.c:20:
+D:/MCU/MCU1/GPIO_I2C/drivers/Inc/stm32f407xx.h:248:1: warning: multi-line comment [-Wcomment]
+  248 | //#define GPIO_BASEADDR_TO_CODE(x)      ( (x == GPIOA)?0:\
+      | ^
+In file included from D:/MCU/MCU1/GPIO_I2C/drivers/Inc/stm32f407xx_gpio_driver.h:133,
+                 from D:/MCU/MCU1/GPIO_I2C/drivers/Inc/stm32f407xx.h:912,
+                 from ../Src/main.c:20:
+D:/MCU/MCU1/GPIO_I2C/drivers/Inc/stm32f407xx.h:248:1: warning: multi-line comment [-Wcomment]
+  248 | //#define GPIO_BASEADDR_TO_CODE(x)      ( (x == GPIOA)?0:\
+      | ^
+../Src/main.c:203:8: warning: return type defaults to 'int' [-Wimplicit-int]
+  203 | static i2c_start(GPIO_Handle_t* I2CPins)
+      |        ^~~~~~~~~
+../Src/main.c:215:8: warning: return type defaults to 'int' [-Wimplicit-int]
+  215 | static i2c_stop(GPIO_Handle_t* I2CPins)
+      |        ^~~~~~~~
+../Src/main.c: In function 'i2c_wait_ack':
+../Src/main.c:285:17: warning: overflow in conversion from 'int' to 'uint8_t' {aka 'unsigned char'} changes value from '(int)*ack_flag & -256' to '0' [-Woverflow]
+  285 |  (*ack_flag) &= ~(0xff);
+      |                 ^
+../Src/main.c:265:10: warning: unused variable 'wait_time' [-Wunused-variable]
+  265 |  uint8_t wait_time;
+      |          ^~~~~~~~~
+../Src/main.c: In function 'i2c_write_Nbyte':
+../Src/main.c:323:10: warning: unused variable 'i' [-Wunused-variable]
+  323 |  uint8_t i;
+      |          ^
+../Src/main.c: In function 'i2c_read_Nbyte':
+../Src/main.c:402:10: warning: unused variable 'some_data' [-Wunused-variable]
+  402 |  uint8_t some_data[] = "slave send\n";
+      |          ^~~~~~~~~
+../Src/main.c: In function 'main':
+../Src/main.c:461:2: warning: implicit declaration of function 'memset' [-Wimplicit-function-declaration]
+  461 |  memset(&I2C1Pins, 0 , sizeof(I2C1Pins));
+      |  ^~~~~~
+../Src/main.c:461:2: warning: incompatible implicit declaration of built-in function 'memset'
+../Src/main.c:22:1: note: include '<string.h>' or provide a declaration of 'memset'
+   21 | #include <stdio.h>
+  +++ |+#include <string.h>
+   22 | 
+../Src/main.c:478:28: warning: passing argument 2 of 'i2c_read_Nbyte' from incompatible pointer type [-Wincompatible-pointer-types]
+  478 |  i2c_read_Nbyte(&I2C1Pins, &len, SLAVE_ADDR, &I2C2Pins, 1);
+      |                            ^~~~
+      |                            |
+      |                            int *
+../Src/main.c:392:54: note: expected 'uint8_t *' {aka 'unsigned char *'} but argument is of type 'int *'
+  392 | void i2c_read_Nbyte(GPIO_Handle_t* I2CPins, uint8_t* data, uint8_t slave_addr, GPIO_Handle_t* I2CSlave, int len)
+      |                                             ~~~~~~~~~^~~~
+../Src/main.c: In function 'i2c_start':
+../Src/main.c:213:1: warning: control reaches end of non-void function [-Wreturn-type]
+  213 | }
+      | ^
+../Src/main.c: In function 'i2c_stop':
+../Src/main.c:225:1: warning: control reaches end of non-void function [-Wreturn-type]
+  225 | }
+      | ^
+At top level:
+../Src/main.c:366:13: warning: 'i2c_read_byte' defined but not used [-Wunused-function]
+  366 | static void i2c_read_byte(GPIO_Handle_t* I2CPins, uint8_t data, GPIO_Handle_t* I2CSlave)
+      |             ^~~~~~~~~~~~~
+../Src/main.c:227:13: warning: 'i2c_send_ack' defined but not used [-Wunused-function]
+  227 | static void i2c_send_ack(GPIO_Handle_t* I2CPins)
+      |             ^~~~~~~~~~~~
+arm-none-eabi-gcc -o "GPIO_I2C.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\MCU\MCU1\GPIO_I2C\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GPIO_I2C.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: GPIO_I2C.elf
+ 
+arm-none-eabi-size   GPIO_I2C.elf 
+arm-none-eabi-objdump -h -S  GPIO_I2C.elf  > "GPIO_I2C.list"
+   text	   data	    bss	    dec	    hex	filename
+   6920	    108	   1588	   8616	   21a8	GPIO_I2C.elf
+Finished building: default.size.stdout
+ 
+Finished building: GPIO_I2C.list
+ 
+
+20:25:43 Build Finished. 0 errors, 15 warnings. (took 1s.30ms)
+

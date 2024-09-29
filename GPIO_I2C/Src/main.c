@@ -27,7 +27,8 @@
 #define SYSTICK_TIM_CLK   	16000000UL
 #define I2C_7bit_addr 		1
 #define SLAVE_ADDR  		0x68
-
+uint8_t rcv_buf[32];
+uint8_t i2c1_read;
 // typedef struct 
 // {
 	
@@ -145,6 +146,7 @@ void I2C_GPIOinits(GPIO_Handle_t* I2CPins)
 	// I2CPins->GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
     //scl
     I2CPins->GPIO_PinConfig.GPIO_PinNumber = I2C1_SCL;
+	I2CPins->scl = I2C1_SCL;
     GPIO_Init(I2CPins);
 	i2c_scl_high(I2CPins, I2C1_SCL);
 
@@ -159,6 +161,7 @@ void I2C_GPIOinits(GPIO_Handle_t* I2CPins)
 
     //sda
     I2CPins->GPIO_PinConfig.GPIO_PinNumber = I2C1_SDA;
+	I2CPins->sda = I2C1_SDA;
     GPIO_Init(I2CPins);
 	i2c_sda_high(I2CPins, I2C1_SDA);
 }
@@ -179,18 +182,20 @@ void I2C_Slave_GPIOinits(GPIO_Handle_t* I2CPins)
 	// I2CPins->GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
     //scl
     I2CPins->GPIO_PinConfig.GPIO_PinNumber = I2C2_SCL;
+	I2CPins->scl = I2C2_SCL;
     GPIO_Init(I2CPins);
 
     //sda
     I2CPins->GPIO_PinConfig.GPIO_PinNumber = I2C2_SDA;
+	I2CPins->sda = I2C2_SDA;
     GPIO_Init(I2CPins);
 }
 
 static uint8_t read_i2c_sda(GPIO_Handle_t* I2CPins, uint8_t PinNum)
 {
-	int temp;
-	temp = GPIO_ReadFromInputPin(I2CPins->pGPIOx, PinNum);
-	return temp;
+	int res;
+	res = GPIO_ReadFromInputPin(I2CPins->pGPIOx, PinNum);
+	return res;
 }
 
 
@@ -245,15 +250,16 @@ static uint8_t i2c_wait_ack(GPIO_Handle_t* I2CPins, GPIO_Handle_t* I2CSlave, uin
 {
 	
 	// *ack_flag |= 0xff;
-	i2c_sda_output(I2CSlave);
-	i2c_sda_input(I2CPins);
+	if(I2CSlave->sda == I2C2_SDA)
+		i2c_sda_output(I2CSlave);
+		
 	if(*ack_flag)
 	{
-		i2c_sda_high(I2CSlave, I2C2_SDA);
+		i2c_sda_high(I2CSlave, I2CSlave->sda);
 	}
 	else
 	{
-		i2c_sda_low(I2CSlave, I2C2_SDA);
+		i2c_sda_low(I2CSlave, I2CSlave->sda);
 	}
 	delay();
 	uint8_t wait_time;
@@ -267,14 +273,15 @@ static uint8_t i2c_wait_ack(GPIO_Handle_t* I2CPins, GPIO_Handle_t* I2CSlave, uin
 	// 		break;
 	// 	}
 	// }
-	i2c_scl_high(I2CPins, I2C1_SCL);
+	I2CPins->scl == I2C1_SCL ? i2c_scl_high(I2CPins, I2CPins->scl): i2c_scl_high(I2CSlave, I2CSlave->scl);
 	delay();
-	i2c_scl_low(I2CPins, I2C1_SCL);
+	I2CPins->scl == I2C1_SCL ? i2c_scl_low(I2CPins, I2CPins->scl): i2c_scl_low(I2CSlave, I2CSlave->scl);
 	delay();
-	i2c_sda_low(I2CPins, I2C1_SDA);
+	i2c_sda_low(I2CPins, I2CPins->sda);
 	delay();
-	i2c_sda_output(I2CPins);
-	i2c_sda_input(I2CSlave);
+	// i2c_sda_output(I2CPins);
+	// if(I2CSlave->sda == I2C2_SDA)	
+		i2c_sda_input(I2CSlave);
 	(*ack_flag) &= ~(0xff);
 	return ack_nack;
 }
@@ -284,8 +291,87 @@ static void i2c_write_byte(GPIO_Handle_t* I2CPins, uint8_t data, GPIO_Handle_t* 
 	uint8_t i;
 	for(i = 0; i < 8 ;i++)
 	{
-		i2c_scl_low(I2CPins, I2C1_SCL);
 
+		I2CPins->scl == I2C1_SCL ? i2c_scl_low(I2CPins, I2CPins->scl): i2c_scl_low(I2CSlave, I2CSlave->scl);
+		
+		if(data & 0x80)
+		{
+			i2c_sda_high(I2CPins, I2CPins->sda);
+		}
+		else
+		{
+			i2c_sda_low(I2CPins, I2CPins->sda);
+		}
+		delay();
+
+		if(read_i2c_sda(I2CSlave, I2CPins->sda) != ((I2CPins->pGPIOx->ODR >>I2CPins->sda) & 0x1))	(*ack_flag) |= (1<<i);
+
+		delay();
+
+		I2CPins->scl == I2C1_SCL ? i2c_scl_high(I2CPins, I2CPins->scl): i2c_scl_high(I2CSlave, I2CSlave->scl);
+		delay();
+		data <<= 1;
+	}
+	I2CPins->scl == I2C1_SCL ? i2c_scl_low(I2CPins, I2CPins->scl): i2c_scl_low(I2CSlave, I2CSlave->scl);
+	// i2c_sda_low(I2CPins, I2CPins->sda);
+	delay();
+}
+
+void i2c_write_Nbyte(GPIO_Handle_t* I2CPins, uint8_t data, uint8_t slave_addr, GPIO_Handle_t* I2CSlave)
+{
+	
+	uint8_t i;
+#if I2C_7bit_addr
+	if(I2CPins->scl == I2C1_SCL)
+	{
+		slave_addr <<= 1;
+		slave_addr &= ~(1);
+	}	
+#endif
+	uint8_t ack_flag = 0x00;
+
+		// i2c_start(I2CPins);
+
+	if(I2CPins->sda == I2C2_SDA)
+	{
+		i2c_sda_output(I2CPins);
+		// i2c_sda_input(I2CSlave);	
+	}
+
+	i2c_write_byte(I2CPins, slave_addr, I2CSlave, &ack_flag);
+
+	if(!i2c_wait_ack(I2CPins, I2CSlave, &ack_flag))
+		goto _err;
+	
+	i2c_sda_high(I2CPins, I2CPins->sda);
+	delay();
+
+	i2c_write_byte(I2CPins, data, I2CSlave, &ack_flag);
+
+	if(!i2c_wait_ack(I2CPins, I2CSlave, &ack_flag))
+		goto _err;
+
+	_err:
+	i2c_sda_high(I2CPins, I2CPins->sda);
+	delay();
+
+	if(I2CPins->sda == I2C2_SDA)
+	{
+		// i2c_sda_output(I2CSlave);
+		i2c_sda_input(I2CPins);
+	}
+	return;
+}
+
+static void i2c_read_byte(GPIO_Handle_t* I2CPins, uint8_t data, GPIO_Handle_t* I2CSlave)
+{
+	// i2c_sda_low(I2CPins, I2C1_SDA);
+	i2c_sda_input(I2CPins);
+	uint8_t i;
+	data = I2CSlave->pGPIOx->ODR;
+	for(i = 0; i< 8;i++)
+	{
+		i2c_scl_low(I2CPins, I2C1_SCL);
 		if(data & 0x80)
 		{
 			i2c_sda_high(I2CPins, I2C1_SDA);
@@ -295,67 +381,82 @@ static void i2c_write_byte(GPIO_Handle_t* I2CPins, uint8_t data, GPIO_Handle_t* 
 			i2c_sda_low(I2CPins, I2C1_SDA);
 		}
 		delay();
-
-		if(read_i2c_sda(I2CSlave, I2C2_SDA) != ((I2CPins->pGPIOx->ODR >>I2C1_SDA) & 0x1))	(*ack_flag) |= (1<<i);
-
-		delay();
-
 		i2c_scl_high(I2CPins, I2C1_SCL);
 		delay();
 		data <<= 1;
 	}
 	i2c_scl_low(I2CPins, I2C1_SCL);
-	i2c_sda_low(I2CPins, I2C1_SDA);
 	delay();
 }
 
-void i2c_write_Nbyte(GPIO_Handle_t* I2CPins, uint8_t data, uint8_t slaveAddr, GPIO_Handle_t* I2CSlave)
+void i2c_read_Nbyte(GPIO_Handle_t* I2CPins, uint8_t* data, uint8_t slave_addr, GPIO_Handle_t* I2CSlave, int len)
 {
 	uint8_t i;
 #if I2C_7bit_addr
-	data <<= 1;
-	slaveAddr <<= 1;
+	if(I2CPins->scl == I2C1_SCL)
+	{
+		slave_addr <<= 1;
+		slave_addr |= 1;
+	}	
 #endif
+	uint8_t some_data[] = "slave send\n";
+
 	uint8_t ack_flag = 0x00;
-	i2c_start(I2CPins);
-	i2c_write_byte(I2CPins, slaveAddr, I2CSlave, &ack_flag);
+
+		// i2c_start(I2CPins);
+
+	// if(I2CPins->sda == I2C2_SDA)
+	// {
+	// 	i2c_sda_output(I2CPins);
+	// 	// i2c_sda_input(I2CSlave);	
+	// }
+
+	i2c_write_byte(I2CPins, slave_addr, I2CSlave, &ack_flag);
 
 	if(!i2c_wait_ack(I2CPins, I2CSlave, &ack_flag))
 		goto _err;
+	i2c_sda_high(I2CPins, I2CPins->sda);
+	delay();
 
-	_err:
-	i2c_stop(I2CPins);
-	// return 0;
-}
+	// i2c_sda_output(I2CSlave);
+	// I2CSlave->pGPIOx->ODR = 0xb;
+	// i2c_sda_input(I2CSlave);
+	// i2c_read_byte(I2CPins, i2c1_read, I2CSlave);
 
-static void i2c_read_byte(GPIO_Handle_t* I2CPins)
-{
-	i2c_sda_input(I2CPins);
-	uint8_t i;
-	uint8_t data = (I2CPins, I2C1_SDA);
-	for(i = 0; i< 8;i++)
+	i2c_sda_output(I2CSlave);
+
+
+	
+	for(i = 0; i< len; i++)
 	{
-		i2c_scl_low(I2CPins, I2C1_SCL);
-		if(data & 0x40)
+		i2c_write_byte(I2CSlave, data[i], I2CPins, &ack_flag);
+		// printf("%d\n",data[i]);
+		if(i == len-1)
 		{
-			i2c_sda_high(I2CPins, I2C1_SDA);
+			i2c_sda_input(I2CSlave);//next
+			i2c_sda_output(I2CPins);//next
+			i2c_send_nack(I2CPins);
 		}
 		else
 		{
-			i2c_sda_low(I2CPins, I2C1_SDA);
+			if(!i2c_wait_ack(I2CSlave, I2CPins, &ack_flag))//next
+			{
+				printf("err\n");
+				goto _err;
+			}
+				
 		}
-		delay();
-		i2c_scl_high(I2CPins, I2C1_SCL);
-		delay();
-		data <<= 1;
 	}
-	i2c_scl_low(I2CPins, I2C1_SCL);
-	delay();
-	i2c_sda_output(I2CPins);
+
+	_err:
+	return;
 }
+
+
 
 int main(void)
 {
+	uint8_t some_data[] = "slave send\n";
 	GPIO_Handle_t I2C1Pins, I2C2Pins;
 	memset(&I2C1Pins, 0 , sizeof(I2C1Pins));
 	memset(&I2C2Pins, 0 , sizeof(I2C2Pins));
@@ -367,8 +468,23 @@ int main(void)
 	while( ! GPIO_ReadFromInputPin(GPIOA,GPIO_PIN_NO_0) );
 	delay();
 
-	uint8_t commandcode = 0x51;
-	i2c_write_Nbyte(&I2C1Pins, commandcode,  SLAVE_ADDR, &I2C2Pins);
+	i2c_start(&I2C1Pins);
+	i2c_write_Nbyte(&I2C1Pins, 0x51, SLAVE_ADDR, &I2C2Pins);
+	// i2c_write_Nbyte(&I2C2Pins, commandcode, &I2C1Pins);
+	i2c_stop(&I2C1Pins);
+
+	int len = 11;
+	i2c_start(&I2C1Pins);
+	i2c_read_Nbyte(&I2C1Pins, &len, SLAVE_ADDR, &I2C2Pins, 1);
+	i2c_stop(&I2C1Pins);
+
+	i2c_start(&I2C1Pins);
+	i2c_write_Nbyte(&I2C1Pins, 0x52, SLAVE_ADDR, &I2C2Pins);
+	i2c_stop(&I2C1Pins);
+	
+	i2c_start(&I2C1Pins);
+	i2c_read_Nbyte(&I2C1Pins, some_data, SLAVE_ADDR, &I2C2Pins, 11);
+	i2c_stop(&I2C1Pins);
 	// printf("%d\n",I2C2Pins.pGPIOx->IDR);
 	// printf("%d\n",I2C2Pins.pGPIOx->ODR);
 
@@ -378,7 +494,6 @@ int main(void)
 	// // delay();
 	// // i2c_send_nack(&I2C1Pins);
 	// delay();
-	// i2c_stop(&I2C1Pins);
 
 //     /* Loop forever */
 // 	printf("test\n");
