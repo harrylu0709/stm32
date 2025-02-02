@@ -23,13 +23,14 @@
 #define TIME_FORMAT_24HRS       2
 
 #define DS1307_I2C_ADDRESS      0x68
-#define SUNDAY                  0x00
-#define MODAY                   0x01
-#define TUESDAY                 0x02
-#define WEDNESDAY               0x03
-#define THURSDAY                0x04
-#define FRIDAY                  0x05
-#define SATURDAY                0x06
+
+#define SUNDAY                  0x01
+#define MODAY                   0x02
+#define TUESDAY                 0x03
+#define WEDNESDAY               0x04
+#define THURSDAY                0x05
+#define FRIDAY                  0x06
+#define SATURDAY                0x07
 
 typedef struct 
 {

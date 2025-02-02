@@ -84,16 +84,21 @@ void ds1307_get_current_time(RTC_time_t *rtc_time)
 void ds1307_set_current_date(RTC_date_t *rtc_date)
 {
 	ds1307_write(binary_to_bcd(rtc_date->date),DS1307_ADDR_DATE);
-	ds1307_write(binary_to_bcd(rtc_date->day),DS1307_ADDR_DAY);
+
 	ds1307_write(binary_to_bcd(rtc_date->month),DS1307_ADDR_MONTH);
+
 	ds1307_write(binary_to_bcd(rtc_date->year),DS1307_ADDR_YEAR);
+
+	ds1307_write(binary_to_bcd(rtc_date->day),DS1307_ADDR_DAY);
+
 }
 void ds1307_get_current_date(RTC_date_t *rtc_date)
 {
-	rtc_date->date = bcd_to_binary((DS1307_ADDR_DATE));
-	rtc_date->day = bcd_to_binary((DS1307_ADDR_DAY));
-	rtc_date->month = bcd_to_binary((DS1307_ADDR_MONTH));
-	rtc_date->year = bcd_to_binary((DS1307_ADDR_YEAR));
+	rtc_date->day =  bcd_to_binary(ds1307_read(DS1307_ADDR_DAY));
+	rtc_date->date = bcd_to_binary(ds1307_read(DS1307_ADDR_DATE));
+	rtc_date->month = bcd_to_binary(ds1307_read(DS1307_ADDR_MONTH));
+	rtc_date->year = bcd_to_binary(ds1307_read(DS1307_ADDR_YEAR));
+
 }
 
 static void ds1307_i2c_pin_config(void)
@@ -170,12 +175,9 @@ static uint8_t binary_to_bcd(uint8_t value)
 
 static uint8_t bcd_to_binary(uint8_t value)
 {
-	uint8_t m,n;
-
-	m = (value >> 4)*10;
-	n=value&(uint8_t)(0x07);
-	
-	return m+n;
+	uint8_t m , n;
+	m = (uint8_t) ((value >> 4 ) * 10);
+	n =  value & (uint8_t)0x0F;
+	return (m+n);
 }
-
 
