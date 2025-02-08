@@ -5,10 +5,10 @@
 
 #include "lcd.h"
 
-#define SYSTICK_TIM_CLK   16000000UL
+#define SYSTICK_TIM_CLK   16000000UL //16MHz
 
 /* Enable this macro if you want to test RTC on LCD */
-// #define PRINT_LCD //If LCD cannot display anything, it is necessary to connect VE(LCD contrast) to ground for the board
+#define PRINT_LCD //If LCD cannot display anything, it is necessary to connect VE(LCD contrast) to ground for the board
 /*
  * Embedded Systems Programming on ARM Cortex-M3/M4 Processor lecture 79
 
@@ -30,9 +30,9 @@ void init_systick_timer(uint32_t tick_hz)
     *pSRVR |= count_value;
 
     //do some settings
-    *pSCSR |= ( 1 << 2);  //Indicates the clock source, processor clock source
-
     *pSCSR |= ( 1 << 1); //Enables SysTick exception request:
+
+    *pSCSR |= ( 1 << 2);  //Indicates the clock source, processor clock source
 
     //enable the systick
     *pSCSR |= ( 1 << 0); //enables the counter
@@ -129,7 +129,7 @@ int main(void)
 		while(1);
 	}
 
-	init_systick_timer(1);
+
 
 	current_date.day = FRIDAY;
 	current_date.date = 15;
@@ -138,7 +138,7 @@ int main(void)
 
 	current_time.hours = 11;
 	current_time.minutes = 59;
-	current_time.seconds = 30;
+	current_time.seconds = 50;
 	current_time.time_format = TIME_FORMAT_12HRS_PM;
 
 	ds1307_set_current_date(&current_date);
@@ -146,6 +146,8 @@ int main(void)
 
 	ds1307_get_current_time(&current_time);
 	ds1307_get_current_date(&current_date);
+
+	init_systick_timer(1);
 
 	char *am_pm;
 	if(current_time.time_format != TIME_FORMAT_24HRS){
@@ -169,6 +171,9 @@ int main(void)
 #else
 	lcd_set_cursor(2, 1);
 	lcd_print_string(date_to_string(&current_date));
+	lcd_print_char('<');
+	lcd_print_string(get_day_of_week(current_date.day));
+	lcd_print_char('>');
 #endif
 
 
