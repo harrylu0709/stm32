@@ -2,6 +2,7 @@
 #include <string.h>
 #include "ds1307.h"
 
+#define I2C2_HANDLE    0
 
 static void ds1307_i2c_pin_config(void);
 static void ds1307_i2c_config(void);
@@ -9,7 +10,12 @@ static uint8_t ds1307_read(uint8_t reg_addr);
 static void ds1307_write(uint8_t value,uint8_t reg_addr);
 static uint8_t binary_to_bcd(uint8_t value);
 static uint8_t bcd_to_binary(uint8_t value);
+#if I2C_INT_ENABLE
+uint8_t tx[2];
+uint8_t ds1307_data;
+uint8_t global_reg_addr;
 
+#endif
 I2C_Handle_t g_ds1307I2CHandle;
 
 uint8_t ds1307_init(void)
@@ -24,6 +30,7 @@ uint8_t ds1307_init(void)
 	//3. Enable the I2C peripheral
 	I2C_PeripheralControl(DS1307_I2C, ENABLE);
 
+	I2C_ManageAcking(DS1307_I2C, ENABLE);
 	//4. Make clock halt = 0 
 	ds1307_write(0x00, DS1307_ADDR_SEC);
 
@@ -94,11 +101,10 @@ void ds1307_set_current_date(RTC_date_t *rtc_date)
 }
 void ds1307_get_current_date(RTC_date_t *rtc_date)
 {
-	rtc_date->day =  bcd_to_binary(ds1307_read(DS1307_ADDR_DAY));
-	rtc_date->date = bcd_to_binary(ds1307_read(DS1307_ADDR_DATE));
+	rtc_date->date  = bcd_to_binary(ds1307_read(DS1307_ADDR_DATE));
 	rtc_date->month = bcd_to_binary(ds1307_read(DS1307_ADDR_MONTH));
-	rtc_date->year = bcd_to_binary(ds1307_read(DS1307_ADDR_YEAR));
-
+	rtc_date->year  = bcd_to_binary(ds1307_read(DS1307_ADDR_YEAR));
+	rtc_date->day   = bcd_to_binary(ds1307_read(DS1307_ADDR_DAY));
 }
 
 static void ds1307_i2c_pin_config(void)
@@ -138,23 +144,60 @@ static void ds1307_i2c_config(void)
     g_ds1307I2CHandle.pI2Cx = DS1307_I2C;
     g_ds1307I2CHandle.I2C_Config.I2C_AckControl = I2C_ACK_ENABLE;
     g_ds1307I2CHandle.I2C_Config.I2C_SCLSpeed = DS1307_I2C_SPEED;
+    g_ds1307I2CHandle.I2C_Config.I2C_FMDutyCycle = I2C_FM_DUTY_2;
+    g_ds1307I2CHandle.I2C_Config.I2C_SCLSpeed = I2C_SCL_SPEED_SM;
     I2C_Init(&g_ds1307I2CHandle);
+#if I2C_INT_ENABLE
+    /* I2C IRQ configuration */
+    I2C_IRQInterruptConfig(IRQ_NO_I2C1_EV, ENABLE);
+    I2C_IRQInterruptConfig(IRQ_NO_I2C1_ER, ENABLE);
+    //I2C_PeripheralControl(DS1307_I2C, ENABLE);
+#endif
 }
 
 static void ds1307_write(uint8_t value, uint8_t reg_addr)
 {
+#if I2C_INT_ENABLE
+	tx[0] = reg_addr;
+	tx[1] = value;
+	while(I2C_MasterSendDataIT_one(&g_ds1307I2CHandle, tx, 2, DS1307_I2C_ADDRESS, I2C_DISABLE_SR) != 0);
+	g_ds1307I2CHandle.TxRxComplt = RESET;
+
+	// //wait till tx completes
+	while(g_ds1307I2CHandle.TxRxComplt != SET);
+
+	g_ds1307I2CHandle.TxRxComplt = RESET;
+#else
 	uint8_t tx[2];
 	tx[0] = reg_addr;
 	tx[1] = value;
 	I2C_MasterSendData(&g_ds1307I2CHandle, tx, 2, DS1307_I2C_ADDRESS, 0, 0);
+#endif
 }
 
 static uint8_t ds1307_read(uint8_t reg_addr)
 {
-	uint8_t data;
+#if I2C_INT_ENABLE
+	global_reg_addr = reg_addr;
+
+	while(I2C_MasterSendDataIT_one(&g_ds1307I2CHandle, &global_reg_addr, 1,DS1307_I2C_ADDRESS, I2C_DISABLE_SR) != 0);
+
+	while(I2C_MasterReceiveDataIT(&g_ds1307I2CHandle, &ds1307_data, 1, DS1307_I2C_ADDRESS, I2C_DISABLE_SR)!= 0);
+	
+	g_ds1307I2CHandle.TxRxComplt = RESET;
+
+	// //wait till rx completes
+	while(g_ds1307I2CHandle.TxRxComplt != SET);
+
+	g_ds1307I2CHandle.TxRxComplt = RESET;
+
+#else
+	uint8_t ds1307_data;
 	I2C_MasterSendData(&g_ds1307I2CHandle, &reg_addr, 1, DS1307_I2C_ADDRESS, 0, 0);
-	I2C_MasterReceiveData(&g_ds1307I2CHandle, &data, 1, DS1307_I2C_ADDRESS, 0);
-	return data;
+	//I2C_MasterSendData(&g_ds1307I2CHandle, &reg_addr, 1, DS1307_I2C_ADDRESS, I2C_DISABLE_SR);
+	I2C_MasterReceiveData(&g_ds1307I2CHandle, &ds1307_data, 1, DS1307_I2C_ADDRESS, 0);
+#endif
+	return ds1307_data;
 }
 
 static uint8_t binary_to_bcd(uint8_t value)

@@ -1,7 +1,15 @@
 #ifndef DS_1307_H
 #define DS_1307_H
 #include "stm32f407xx.h"
-
+#define ENABLE_SysTick 0
+#if ENABLE_SysTick
+	#define ENABLE_Timer 0
+#else
+	#define ENABLE_Timer 1
+#endif
+#if ENABLE_Timer
+	#define I2C_INT_ENABLE 1
+#endif 
 #define DS1307_I2C              I2C1
 #define DS1307_I2C_GPIO_PORT    GPIOB
 #define DS1307_I2C_SDA_PIN      GPIO_PIN_NO_7

@@ -98,6 +98,8 @@
 #define UART4_BASEADDR						(APB1PERIPH_BASEADDR + 0x4C00)
 #define UART5_BASEADDR						(APB1PERIPH_BASEADDR + 0x5000)
 
+#define TIM5_BASEADDR						(APB1PERIPH_BASEADDR + 0x0C00)
+#define TIM2_BASEADDR						(APB1PERIPH_BASEADDR + 0x0000)
 /*
  * Base addresses of peripherals which are hanging on APB2 bus
  * TODO : Complete for all other peripherals
@@ -258,6 +260,32 @@ typedef struct
 	__vo uint32_t GTPR;       /*!< TODO,     										Address offset: 0x18 */
 } USART_RegDef_t;
 
+typedef struct
+{
+	__vo uint32_t CR1;         /*!< TODO,     										Address offset: 0x00 */
+	__vo uint32_t CR2;         /*!< TODO,     										Address offset: 0x04 */
+	__vo uint32_t SMCR;        /*!< TODO,     										Address offset: 0x08 */
+	__vo uint32_t DIER;        /*!< TODO,     										Address offset: 0x0C */
+	__vo uint32_t SR;        /*!< TODO,     										Address offset: 0x10 */
+	__vo uint32_t EGR;        /*!< TODO,     										Address offset: 0x14 */
+	__vo uint32_t CCMR1;       /*!< TODO,     										Address offset: 0x18 */
+	__vo uint32_t CCMR2;         /*!< TODO,     										Address offset: 0x00 */
+	__vo uint32_t CCER;         /*!< TODO,     										Address offset: 0x04 */
+	__vo uint32_t CNT;        /*!< TODO,     										Address offset: 0x08 */
+	__vo uint32_t PSC;        /*!< TODO,     										Address offset: 0x0C */
+	__vo uint32_t ARR;        /*!< TODO,     										Address offset: 0x10 */
+	uint32_t RESERVED1;        /*!< TODO,     										Address offset: 0x14 */
+	__vo uint32_t CCR1;       /*!< TODO,     										Address offset: 0x18 */
+	__vo uint32_t CCR2;         /*!< TODO,     										Address offset: 0x00 */
+	__vo uint32_t CCR3;         /*!< TODO,     										Address offset: 0x04 */
+	__vo uint32_t CCR4;        /*!< TODO,     										Address offset: 0x08 */
+	uint32_t RESERVED2;         /*!< TODO,     										Address offset: 0x0C */
+	__vo uint32_t DCR;       /*!< TODO,     										Address offset: 0x18 */
+	__vo uint32_t DMAR;         /*!< TODO,     										Address offset: 0x00 */
+	__vo uint32_t OR2;         /*!< TODO,     										Address offset: 0x04 */
+	__vo uint32_t OR5;        /*!< TODO,     										Address offset: 0x08 */
+} TIM_RegDef_t;
+
 /*
  * peripheral definitions ( Peripheral base addresses typecasted to xxx_RegDef_t)
  */
@@ -291,7 +319,8 @@ typedef struct
 #define UART4  				((USART_RegDef_t*)UART4_BASEADDR)
 #define UART5  				((USART_RegDef_t*)UART5_BASEADDR)
 #define USART6  			((USART_RegDef_t*)USART6_BASEADDR)
-
+#define TIM2  				((TIM_RegDef_t*)TIM2_BASEADDR)
+#define TIM5  				((TIM_RegDef_t*)TIM5_BASEADDR)
 /*
  * Clock Enable Macros for GPIOx peripherals
  * RCC registers 6.3
@@ -335,6 +364,12 @@ typedef struct
 #define UART5_PCCK_EN()  (RCC->APB1ENR |= (1 << 20))
 #define USART6_PCCK_EN() (RCC->APB1ENR |= (1 << 5))
 
+
+#define TIM2_PCLK_EN() (RCC->APB1ENR |= (1 << 0))
+#define TIM5_PCLK_EN() (RCC->APB1ENR |= (1 << 3))
+
+#define TIM2_PCLK_DI() (RCC->APB1ENR &= ~ (1 << 0))
+#define TIM5_PCLK_DI() (RCC->APB1ENR &= ~ (1 << 3))
 /*
  * Clock Enable Macros for SYSCFG peripheral
  */
@@ -429,8 +464,10 @@ typedef struct
 #define IRQ_NO_I2C2_ER     34
 #define IRQ_NO_I2C3_EV     79
 #define IRQ_NO_I2C3_ER     80
-#define IRQ_NO_USART1	    37
-#define IRQ_NO_USART2	    38
+#define IRQ_NO_USART1	   37
+#define IRQ_NO_USART2	   38
+#define IRQ_NO_TIM2		   28 //APB1 45MHz
+#define IRQ_NO_TIM5		   50 //APB1 45MHz
 //#define IRQ_NO_USART3	    39
 //#define IRQ_NO_UART4	    52
 //#define IRQ_NO_UART5	    53
@@ -654,6 +691,7 @@ typedef struct
 #include "stm32f407xx_i2c_driver.h"
 #include "stm32f407xx_usart_driver.h"
 #include "stm32f407xx_rcc_driver.h"
+#include "stm32f407xx_tim_driver.h"
 #endif /* INC_STM3F407XX_H_ */
 //
 ///*
