@@ -7,7 +7,7 @@ DRIVERS_DIR := drivers/Src
 OBJ_FILES := $(wildcard $(DRIVERS_DIR)/Src/*.o)  # Adjust based on your structure
 all:main.o lcd.o ds1307.o stm32_startup.o syscalls.o drivers/Src/stm32f407xx_gpio_driver.o drivers/Src/stm32f407xx_i2c_driver.o drivers/Src/stm32f407xx_tim_driver.o drivers/Src/stm32f407xx_rcc_driver.o final.elf
 
-semi:main.o lcd.o ds1307.o stm32_startup.o syscalls.o drivers/Src/stm32f407xx_gpio_driver.o drivers/Src/stm32f407xx_i2c_driver.o drivers/Src/stm32f407xx_tim_driver.o drivers/Src/stm32f407xx_rcc_driver.o final_sh.elf
+semi:main.o lcd.o ds1307.o stm32_startup.o drivers/Src/stm32f407xx_gpio_driver.o drivers/Src/stm32f407xx_i2c_driver.o drivers/Src/stm32f407xx_tim_driver.o drivers/Src/stm32f407xx_rcc_driver.o final_sh.elf
 
 main.o:main.c 
 	$(CC) $(CFLAGS) -o $@ $^
