@@ -59,17 +59,18 @@ typedef struct
 TCB_t user_tasks[MAX_TASKS];
 
 //semihosting init function 
-extern void initialise_monitor_handles(void);
+//extern void initialise_monitor_handles(void);
 
 int main(void)
 {
+
 	enable_processor_faults();
 	
-	initialise_monitor_handles();
+	//initialise_monitor_handles();
 
 	init_scheduler_stack(SCHED_STACK_START);
 
-	printf("Implementation of simple task scheduler\n");
+	//printf("Implementation of simple task scheduler\n");
 
 	init_tasks_stack();
 
@@ -93,7 +94,7 @@ void task1_handler(void)
 {
    while(1)
    {
-	   printf("task1\n");
+	   //printf("task1\n");
 	   led_on(LED_GREEN);
 	   task_delay(1000); /* 1000ms*/
 	   led_off(LED_GREEN);
@@ -104,7 +105,7 @@ void task2_handler(void)
 {
    while(1)
    {
-	   printf("task2\n");
+	   //printf("task2\n");
 	   led_on(LED_ORANGE);
 	   task_delay(500); /* 500ms*/
 	   led_off(LED_ORANGE);
@@ -115,7 +116,7 @@ void task3_handler(void)
 {
    while(1)
    {
-	   printf("task3\n");
+	   //printf("task3\n");
 	   led_on(LED_BLUE);
 	   task_delay(250); /* 250ms*/
 	   led_off(LED_BLUE);
@@ -126,7 +127,7 @@ void task4_handler(void)
 {
    while(1)
    {
-	   printf("task4\n");
+	   //printf("task4\n");
 	   led_on(LED_RED);
 	   task_delay(125); /* 125ms*/
 	   led_off(LED_RED);
@@ -353,19 +354,19 @@ void SysTick_Handler(void)
 
 void HardFault_Handler(void)
 {
-   printf("Exception : Hardfault\n");
+   //printf("Exception : Hardfault\n");
    while(1);
 }
 
 
 void MemManage_Handler(void)
 {
-   printf("Exception : MemManage\n");
+   //printf("Exception : MemManage\n");
    while(1);
 }
 
 void BusFault_Handler(void)
 {
-   printf("Exception : BusFault\n");
+   //printf("Exception : BusFault\n");
    while(1);
 }

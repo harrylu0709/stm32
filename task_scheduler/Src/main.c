@@ -247,6 +247,7 @@ __attribute__ ((naked)) void switch_sp_to_psp(void)
 
 void schedule(void)
 {
+	/* trigger PendSV Handler*/
 	 uint32_t *pICSR=(uint32_t*)0xE000ED04;
 	 *pICSR|=(1<<28);
 }

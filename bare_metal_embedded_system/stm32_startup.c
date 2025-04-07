@@ -250,7 +250,7 @@ void Reset_Handler(void)
 	}
 
     //Call init function of standard library(optional)
-	__libc_init_array();
+	//__libc_init_array();
 
     //Call main()
 	main();
