@@ -14,10 +14,11 @@ OBJS = $(SRCS:.c=.o)
 # Output binary
 TARGET_NAME = final
 ELF = $(TARGET_NAME).elf
+ELF_SH = final_sh.elf
 BIN = $(TARGET_NAME).bin
 
 all: $(BIN)
-
+semi: $(ELF_SH)
 # Compile .c to .o
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -25,6 +26,10 @@ all: $(BIN)
 # Build the target
 $(ELF):$(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
+
+# Build the target
+$(ELF_SH):$(filter-out ./syscalls.o, $(OBJS))
+	$(CC) $(LDFLAGS_SH) -o $@ $^
 
 # Convert elf to bin
 $(BIN): $(ELF)
@@ -41,6 +46,9 @@ load:
 
 program_elf:
 	openocd -f board/stm32f4discovery.cfg -c init -c halt -c "flash write_image erase $(ELF)" -c reset -c shutdown
+
+elf_sh:
+	openocd -f board/stm32f4discovery.cfg -c init -c halt -c "flash write_image erase $(ELF_SH)" -c "arm semihosting enable" -c reset
 
 program_bin:
 	openocd -f board/stm32f4discovery.cfg -c "program $(BIN) verify reset exit 0x08000000"

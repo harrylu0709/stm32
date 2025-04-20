@@ -1,8 +1,8 @@
 
 
 #include <stdio.h>
-#include "ds1307.h"
-#include "lcd.h"
+#include "LIS3DSH.h"
+#include "led.h"
 
 #define SYSTICK_TIM_CLK   16000000UL //16MHz
 #define LED_PERIOD_MS	  50
@@ -74,21 +74,86 @@ void delay(void)
 }
 
 //semihosting init function
-//extern void initialise_monitor_handles(void);
+extern void initialise_monitor_handles(void);
 volatile uint8_t start_cnt = 0;
 volatile uint8_t id_cnt = 0;
 volatile int8_t start_flag = 0;
 
 uint8_t start_frame[4]= {0x10, 0x01, 0x10, 0x01};
 uint8_t student_id[8]= {0x00, 0x01, 0x01, 0x01, 0x10, 0x11, 0x00, 0x11}; //ID is 5555
+int16_t x;
+int16_t y;
+int16_t z;
+
+/*
+	part1
+	https://docs.google.com/document/d/16My2VHtrzub1NycOldHII0mE8Xq-i0LB490brx3gpcc/edit?tab=t.0#heading=h.uu6cpqw6zjbz
+
+	part2
+	https://docs.google.com/document/d/17jYCwIollEr9pZSDwi219dB4Bd-WEjr2jH_KUeVLsSc/edit?tab=t.0#heading=h.lc5fcf8se9xg
+
+	part3
+	https://docs.google.com/document/d/1LF4pFkJgdbv1WE2SsijvQHM_YJ8eBC7BEsMf994AXnU/edit?tab=t.0#heading=h.lc5fcf8se9xg
+*/
+
+int twos_complement_to_signed(int value, int bitWidth) {
+    if (value & (1U << (bitWidth - 1))) {
+        // Negative number
+        value |= ~((1U << bitWidth) - 1);  // Sign-extend the value
+    }
+    return value;
+}
 int main(void)
 {
 	//initialise_monitor_handles();
 	LIS3DSH_init();
-	return 0;
-	TIM5_init();
 	led_init();
+	TIM5_init();
+	int res_x;
+	int res_y;
+	int res_z;
+	while(1)
+	{
+		LIS3DSH_read_xyz(&x, &y, &z);
+		res_x = twos_complement_to_signed(x, 16);
+		res_y = twos_complement_to_signed(y, 16);
+		res_z = twos_complement_to_signed(z, 16);
 
+		//printf("%d %d %d\n",x,y,z);
+		if(res_x > LED_TH_X)
+			led_on(LED_GPIO_RED);
+		else
+			led_off(LED_GPIO_RED);
+
+		if(res_x  < -LED_TH_X)
+			led_on(LED_GPIO_GREEN);
+		else
+			led_off(LED_GPIO_GREEN);
+
+		if(res_y > LED_TH_Y)
+			led_on(LED_GPIO_ORANGE);
+		else
+			led_off(LED_GPIO_ORANGE);
+
+		if(res_y  < -LED_TH_Y)
+			led_on(LED_GPIO_BLUE);
+		else
+			led_off(LED_GPIO_BLUE);
+
+		// if(res_z > LED_TH_Z)
+		// 	led_on(LED_GPIO_ORANGE);
+		// else
+		// 	led_off(LED_GPIO_ORANGE);
+
+		// if(res_z  < -LED_TH_Z)
+		// 	led_on(LED_GPIO_BLUE);
+		// else
+		// 	led_off(LED_GPIO_BLUE);
+	}
+	
+	return 0;
+	
+	
 	while(1);
 	//I2C_IRQInterruptConfig(IRQ_NO_I2C1_EV, ENABLE);
 	//I2C_IRQPriorityConfig(IRQ_NO_I2C1_EV, NVIC_IRQ_PRI0);

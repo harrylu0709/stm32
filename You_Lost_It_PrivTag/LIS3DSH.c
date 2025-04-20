@@ -1,8 +1,9 @@
 #include <stdint.h>
 #include <string.h>
-#include "ds1307.h"
+#include "LIS3DSH.h"
 
 
+uint8_t dummy[2] = {0xFF, 0xFF};
 void SPI1_GPIOInits(void)
 {
 	GPIO_Handle_t SPIPins;
@@ -54,24 +55,38 @@ void SPI1_Inits(void)
 void spi_write_reg(uint8_t addr, uint8_t data)
 {
 	
-	uint8_t tx_buf[3];
-	tx_buf[0] = WRITE;
-	tx_buf[1] = addr;
-	tx_buf[2] = data;
+	uint8_t tx_buf[2];
+	tx_buf[0] = addr | WRITE;
+	tx_buf[1] = data;
 	
 	GPIO_WriteToOutputPin(GPIOE, SPI1_CS, 0);
+
 	SPI_SendData(SPI1, tx_buf, ARRAY_LENGTH(tx_buf));
+	//while(SPI_GetFlagStatus(SPI1, SPI_BUSY_FLAG));
 	while(SPI_GetFlagStatus(SPI1, SPI_BUSY_FLAG));
+
 	GPIO_WriteToOutputPin(GPIOE, SPI1_CS, 1);
 }
 
 void spi_read_reg(uint8_t addr, uint8_t *data)
 {
-	uint8_t tx_buf[2];
-	tx_buf[0] = READ;
-	tx_buf[1] = addr;
-	SPI_SendData(SPI1, tx_buf, ARRAY_LENGTH(tx_buf));
+	(*data) = 0;
+	GPIO_WriteToOutputPin(GPIOE, SPI1_CS, 0);
+	uint8_t tx_buf = addr | READ;
+	SPI_SendData(SPI1, &tx_buf, 1);
+	while(SPI_GetFlagStatus(SPI1, SPI_BUSY_FLAG));
+
 	SPI_ReceiveData(SPI1, data, 1);
+	while(SPI_GetFlagStatus(SPI1, SPI_BUSY_FLAG));
+	(*data) = 0;
+	SPI_SendData(SPI1, dummy, 1);
+	while(SPI_GetFlagStatus(SPI1, SPI_BUSY_FLAG));
+
+	SPI_ReceiveData(SPI1, data, 1);
+	while(SPI_GetFlagStatus(SPI1, SPI_BUSY_FLAG));
+
+	GPIO_WriteToOutputPin(GPIOE, SPI1_CS, 1);
+
 }
 
 void LIS3DSH_init(void)
@@ -92,15 +107,53 @@ void LIS3DSH_init(void)
 
 	SPI_PeripheralControl(SPI1, ENABLE);
 	//write CTRL_REG4(0x20) = 0x67; //X,Y,Z enable, ODR = 100Hz
-	spi_write_reg(0x20, 0x67);
+	spi_write_reg(ADD_REG_CTRL_4, 0x67);
 	//write CTRL_REG3(0x23) = 0xC8; //DRY active high on INT1 pin
-	spi_write_reg(0x23, 0xC8);
-	
+
+	spi_write_reg(ADD_REG_CTRL_3, 0xC8);
+
+	// uint8_t data;
+	// spi_read_reg(0x23, &data);
 	SPI_PeripheralControl(SPI1, DISABLE);
 	//https://stackoverflow.com/questions/50867940/why-am-i-only-getting-0xff-when-reading-from-the-lis3dsh-accelerometer-on-the-st
 }
 
 void LIS3DSH_read_xyz(int16_t *x, int16_t *y, int16_t *z)
 {
+	/*
+	https://github.com/marcorussi/lis3dsh_demo/blob/master/LIS3DSH_demo.c#L261
+	https://blog.csdn.net/zhangfls/article/details/109078500
+	*/
+	SPI_PeripheralControl(SPI1, ENABLE);
+
+	uint8_t status;
+	uint8_t rx = 0;
 	//status register(0x27)
+	// while(1)
+	// {
+	//  	spi_read_reg(0x27, &status);
+	//  	if(((status>>3) & 0x01) == 0) continue;
+	//  	else break;
+	// }
+	(*x) = 0;
+	(*y) = 0;
+	(*z) = 0;
+
+	spi_read_reg(ADD_REG_OUT_X_L, &rx);
+	(*x) |= rx;
+	spi_read_reg(ADD_REG_OUT_X_H, &rx);
+	(*x) |= (rx<<8);
+
+	spi_read_reg(ADD_REG_OUT_Y_L, &rx);
+	(*y) |= rx;
+	spi_read_reg(ADD_REG_OUT_Y_H, &rx);
+	(*y) |= (rx<<8);
+
+	spi_read_reg(ADD_REG_OUT_Z_L, &rx);
+	(*z) |= rx;
+	spi_read_reg(ADD_REG_OUT_Z_H, &rx);
+	(*z) |= (rx<<8);
+
+	SPI_PeripheralControl(SPI1, DISABLE);
+	(void)status;
 }
